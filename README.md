@@ -98,3 +98,10 @@ auto_job_greeting/
 - [业务流程图](../../documents/product_requirements/auto_job_greeting/flowchart.md)
 - [用户故事](../../documents/product_requirements/auto_job_greeting/user_story.md)
 - [原型说明](../../documents/product_requirements/auto_job_greeting/prototype.md)
+
+---
+
+## License
+
+本项目采用 **Non-Commercial License**：仅允许非商用使用，禁止未授权商用。  
+详情见 [LICENSE](./LICENSE)。
