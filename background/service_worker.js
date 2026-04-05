@@ -479,6 +479,10 @@ async function executeSendInNewTab(job, message, opts = {}) {
       console.error('[SW executeSendInNewTab] 缺少职位详情URL');
       return { success: false, error: '缺少职位详情URL', code: 'NO_URL' };
     }
+    if (!targetUrl.startsWith('https://www.zhipin.com/')) {
+      console.error('[SW executeSendInNewTab] 无效的职位详情URL:', targetUrl);
+      return { success: false, error: '无效的职位详情URL', code: 'INVALID_URL' };
+    }
 
     console.log(`[SW executeSendInNewTab] 开始(第${attempt}次)：${job.jobTitle} | ${targetUrl}`);
     const tab = await chrome.tabs.create({ url: targetUrl, active: true });
