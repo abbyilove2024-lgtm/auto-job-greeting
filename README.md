@@ -85,10 +85,12 @@ auto_job_greeting/
 ## 重要说明
 
 - **数据安全**：所有数据（简历、API Key、历史记录）仅存储在本地 `chrome.storage.local`，不上传任何服务器
-- **风控规避**：内置随机延迟（1-5秒）和每分钟频率限制（≤5条），模拟真实用户行为
+- **合规使用**：请遵守目标平台的服务条款、自动化规则与当地法律法规。使用者需自行承担账号与合规风险
+- **频率控制**：内置发送间隔（1-5 秒）与每分钟上限（≤5 条），用于降低误操作与过载风险
 - **选择器维护**：Boss直聘页面结构如有变更，需更新 `content/job_searcher.js` 中的 `SEL` 常量
 - **AI 提供商**：当前内置支持 `OpenAI`、`Anthropic`、`OpenRouter`，并提供 `OpenAI 兼容` 类型
 - **API Key**：调用费用由用户自行承担，不填则使用内置默认消息模板
+- **安全反馈**：如发现安全问题，请参考 [SECURITY.md](./SECURITY.md)
 
 ---
 
@@ -105,3 +107,9 @@ auto_job_greeting/
 
 本项目采用 **Non-Commercial License**：仅允许非商用使用，禁止未授权商用。  
 详情见 [LICENSE](./LICENSE)。
+
+---
+
+## Third-Party Notices
+
+第三方依赖及许可证信息见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
