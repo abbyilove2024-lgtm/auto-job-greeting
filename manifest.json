@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Auto Job Greeting - Boss直聘自动打招呼",
+  "version": "1.0.0",
+  "description": "自动检索Boss直聘岗位，AI生成个性化打招呼消息，提升求职效率",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://www.zhipin.com/*",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://openrouter.ai/*"
+  ],
+  "background": {
+    "service_worker": "background/service_worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.zhipin.com/*"],
+      "js": ["content/job_searcher.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.zhipin.com/web/geek/jobs*"],
+      "js": ["content/page_job_collector.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pages/*", "lib/*", "lib/vendor/*", "content/page_job_collector.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

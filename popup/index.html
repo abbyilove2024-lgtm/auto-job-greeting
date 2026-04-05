@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto Job Greeting</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      color: #333;
+      background: #fff;
+    }
+
+    /* ── 顶部标题栏 ─────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .header-title { font-size: 15px; font-weight: 600; }
+    .header-ver   { font-size: 11px; opacity: .75; }
+
+    /* ── 状态区域 ───────────────────────────────── */
+    .status-section {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .status-badge .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+
+    /* 状态颜色 */
+    .state-idle     { background: #f5f5f5; color: #888; }
+    .state-idle .dot { background: #ccc; }
+    .state-searching { background: #e8f4fd; color: #1a73e8; }
+    .state-searching .dot { background: #1a73e8; animation: pulse 1s infinite; }
+    .state-pending  { background: #fff3e0; color: #e65100; }
+    .state-pending .dot  { background: #e65100; }
+    .state-sending  { background: #e8f5e9; color: #2e7d32; }
+    .state-sending .dot  { background: #4caf50; animation: pulse 1s infinite; }
+    .state-paused   { background: #fff8e1; color: #f57f17; }
+    .state-paused .dot   { background: #ffb300; }
+    .state-done     { background: #e8f5e9; color: #1b5e20; }
+    .state-done .dot     { background: #4caf50; }
+    .state-error    { background: #fce8e6; color: #c62828; }
+    .state-error .dot    { background: #f44336; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* 进度文字 */
+    .progress-text {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    /* 进度条 */
+    .progress-bar-wrap {
+      height: 4px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width .3s;
+    }
+
+    /* ── 操作按钮区 ─────────────────────────────── */
+    .actions {
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-primary   { background: #667eea; color: #fff; }
+    .btn-warning   { background: #ff9800; color: #fff; }
+    .btn-danger    { background: #f44336; color: #fff; }
+    .btn-secondary { background: #f5f5f5; color: #555; border: 1px solid #e0e0e0; }
+
+    /* ── 待发提示栏 ─────────────────────────────── */
+    .pending-bar {
+      display: none;
+      margin: 0 16px 10px;
+      padding: 9px 12px;
+      background: #fff3e0;
+      border: 1px solid #ffe0b2;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #e65100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pending-bar.hidden { display: none !important; }
+    .pending-link {
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ── 导航栏 ─────────────────────────────────── */
+    .nav {
+      display: flex;
+      border-top: 1px solid #f0f0f0;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 11px 0;
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      color: #666;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: background .15s;
+    }
+    .nav-btn:hover { background: #f5f5f5; }
+    .nav-btn svg { width: 18px; height: 18px; }
+
+    /* ── 错误提示 ───────────────────────────────── */
+    .error-msg {
+      margin: 0 16px 10px;
+      padding: 8px 12px;
+      background: #fce8e6;
+      border: 1px solid #ffcdd2;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #c62828;
+    }
+    .error-msg.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部标题栏 -->
+  <div class="header">
+    <span class="header-title">🤖 自动打招呼</span>
+    <span class="header-ver">v1.0.0</span>
+  </div>
+
+  <!-- 状态区域 -->
+  <div class="status-section">
+    <div id="statusBadge" class="status-badge state-idle">
+      <span class="dot"></span>
+      <span id="statusText">待机中</span>
+    </div>
+    <div id="progressText" class="progress-text" style="display:none;"></div>
+    <div id="progressWrap" class="progress-bar-wrap" style="display:none;">
+      <div id="progressBar" class="progress-bar" style="width:0%;"></div>
+    </div>
+  </div>
+
+  <!-- 错误提示 -->
+  <div id="errorMsg" class="error-msg hidden"></div>
+
+  <!-- 待发提示栏 -->
+  <div id="pendingBar" class="pending-bar hidden">
+    <span id="pendingText">0 个岗位待发送</span>
+    <span id="pendingLink" class="pending-link">查看列表 →</span>
+  </div>
+
+  <!-- 操作按钮区 -->
+  <div class="actions">
+    <button id="btnSearch"  class="btn btn-primary">🔍 开始检索</button>
+    <button id="btnPause"   class="btn btn-warning"   style="display:none;">⏸ 暂停</button>
+    <button id="btnResume"  class="btn btn-primary"   style="display:none;">▶ 继续</button>
+    <button id="btnStop"    class="btn btn-danger"    style="display:none;">⏹ 停止</button>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="nav">
+    <button class="nav-btn" id="navSettings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      设置
+    </button>
+    <button class="nav-btn" id="navHistory">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      历史
+    </button>
+  </nav>
+
+  <script src="popup.js"></script>
+</body>
+</html>

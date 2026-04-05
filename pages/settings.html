@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>设置 — Auto Job Greeting</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      color: #333;
+      background: #f7f8fa;
+      min-height: 100vh;
+    }
+
+    /* ── 顶部导航 ─────────────────────────────── */
+    .topbar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* ── 主体容器 ─────────────────────────────── */
+    .container {
+      max-width: 680px;
+      margin: 24px auto;
+      padding: 0 16px 80px;
+    }
+
+    /* ── 卡片 ─────────────────────────────────── */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e8e8e8;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #222;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── 表单元素 ─────────────────────────────── */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .form-row.single { grid-template-columns: 1fr; }
+    .form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+    .form-item { display: flex; flex-direction: column; gap: 5px; }
+    .form-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
+    .form-label .required { color: #f44336; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #333;
+      background: #fff;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,.15);
+    }
+    input.error { border-color: #f44336; }
+    .error-hint { font-size: 11px; color: #f44336; margin-top: 2px; display: none; }
+    .error-hint.show { display: block; }
+
+    textarea { resize: vertical; min-height: 60px; }
+
+    /* ── 简历上传区 ───────────────────────────── */
+    .resume-upload {
+      border: 1px solid #e4e8f3;
+      border-radius: 10px;
+      background: #fafbff;
+      padding: 14px;
+      transition: border-color .2s, background .2s;
+    }
+    .resume-upload.drag-over {
+      border-color: #667eea;
+      background: #f0f2ff;
+    }
+    .upload-zone {
+      display: block;
+      text-align: center;
+      cursor: pointer;
+      padding: 18px 10px;
+      border-radius: 8px;
+      transition: background .2s;
+    }
+    .upload-zone:hover { background: rgba(102,126,234,.06); }
+    .upload-zone .icon { font-size: 28px; margin-bottom: 6px; }
+    .upload-zone .tip { font-size: 12px; color: #999; margin-top: 4px; }
+    .upload-zone .main { font-size: 14px; color: #333; }
+    .upload-zone input[type="file"] { display: none; }
+
+    .upload-loaded {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 52px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #e7ebf5;
+    }
+    .resume-upload[data-state="loaded"] .upload-loaded { display: flex; }
+    .resume-upload[data-state="loaded"] .upload-zone { display: none; }
+
+    .upload-file-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+    .file-icon { font-size: 18px; line-height: 1; }
+    .file-name-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #2a4adf;
+      cursor: pointer;
+      font-size: 13px;
+      text-align: left;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-name-btn:hover { text-decoration: underline; }
+    .replace-file-btn {
+      border: 1px solid #d5dcf2;
+      background: #fff;
+      color: #4a5fd0;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .replace-file-btn:hover { background: #f4f6ff; }
+
+    /* 解析进度 */
+    .parse-progress {
+      display: none;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #e8f4fd;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #1a73e8;
+      text-align: center;
+    }
+    .parse-progress.show { display: block; }
+
+    /* ── 发送模式选择 ─────────────────────────── */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .mode-card {
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .mode-card:hover { border-color: #667eea; background: #f5f6ff; }
+    .mode-card.selected { border-color: #667eea; background: #eef0fd; }
+    .mode-card .mode-icon { font-size: 20px; margin-bottom: 4px; }
+    .mode-card .mode-name { font-size: 12px; font-weight: 600; color: #333; }
+    .mode-card .mode-desc { font-size: 11px; color: #888; margin-top: 2px; }
+    .mode-card input[type="radio"] { display: none; }
+
+    /* ── 保存按钮 ─────────────────────────────── */
+    .save-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 12px 24px;
+      background: #fff;
+      border-top: 1px solid #eee;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .btn {
+      padding: 9px 22px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: #667eea; color: #fff; }
+    .btn-secondary { background: #f5f5f5; color: #555; border: 1px solid #e0e0e0; }
+
+    /* ── Toast ────────────────────────────────── */
+    .toast {
+      position: fixed;
+      top: 20px; right: 20px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity .3s, transform .3s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #4caf50; }
+    .toast.error   { background: #f44336; }
+
+    .template-editor {
+      width: 100%;
+      min-height: 92px;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      color: #444;
+      font-size: 13px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">⚙️ 设置</div>
+
+  <div class="container">
+
+    <!-- 简历上传 -->
+    <div class="card">
+      <div class="card-title">简历信息</div>
+      <div class="resume-upload" id="resumeUpload" data-state="idle">
+        <label class="upload-zone" id="uploadZone" for="resumeFile">
+          <div class="icon">📄</div>
+          <div class="main">点击上传或拖拽简历文件</div>
+          <div class="tip">支持 PDF、Word (.docx) 格式</div>
+        </label>
+        <div class="upload-loaded" id="uploadLoaded">
+          <div class="upload-file-main">
+            <span class="file-icon">📄</span>
+            <button type="button" id="loadedFileNameBtn" class="file-name-btn">简历文件</button>
+          </div>
+          <button type="button" id="replaceResumeBtn" class="replace-file-btn">更换文件</button>
+        </div>
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display:none;" />
+      </div>
+      <div class="parse-progress" id="parseProgress">⏳ 正在解析简历…</div>
+
+      <div style="margin-top:14px;">
+        <div class="form-row">
+          <div class="form-item">
+            <label class="form-label">姓名 <span class="required">*</span></label>
+            <input type="text" id="resumeName" placeholder="您的姓名" />
+          </div>
+          <div class="form-item">
+            <label class="form-label">工作年限</label>
+            <input type="number" id="resumeExp" placeholder="如：3" min="0" max="50" />
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="form-item">
+            <label class="form-label">技能（逗号分隔）</label>
+            <input type="text" id="resumeSkills" placeholder="如：Vue, React, TypeScript" />
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="form-item">
+            <label class="form-label">教育背景</label>
+            <input type="text" id="resumeEdu" placeholder="如：本科" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 求职意向 -->
+    <div class="card">
+      <div class="card-title">求职意向</div>
+      <div class="form-row">
+        <div class="form-item">
+          <label class="form-label">职位关键词 <span class="required">*</span></label>
+          <input type="text" id="intentKeyword" placeholder="如：前端开发" />
+          <span class="error-hint" id="keywordError">请输入职位关键词</span>
+        </div>
+        <div class="form-item">
+          <label class="form-label">工作城市</label>
+          <input type="text" id="intentCity" placeholder="如：北京" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-item">
+          <label class="form-label">最低薪资（K）</label>
+          <input type="number" id="salaryMin" placeholder="如：15" min="0" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">最高薪资（K）</label>
+          <input type="number" id="salaryMax" placeholder="如：30" min="0" />
+          <span class="error-hint" id="salaryError">最高薪资应大于最低薪资</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 检索配置 -->
+    <div class="card">
+      <div class="card-title">检索配置</div>
+      <div class="form-row">
+        <div class="form-item">
+          <label class="form-label">最大检索页数（默认 10）</label>
+          <input type="number" id="maxPages" placeholder="10" min="1" max="50" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 发送配置 -->
+    <div class="card">
+      <div class="card-title">发送配置</div>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label" style="margin-bottom:8px;display:block;">发送模式</label>
+        <div class="mode-grid">
+          <label class="mode-card selected" id="modeAuto">
+            <input type="radio" name="sendMode" value="auto" checked />
+            <div class="mode-icon">🤖</div>
+            <div class="mode-name">全自动</div>
+            <div class="mode-desc">检索后直接发送</div>
+          </label>
+          <label class="mode-card" id="modeReview">
+            <input type="radio" name="sendMode" value="manual_review" />
+            <div class="mode-icon">☑️</div>
+            <div class="mode-name">待发列表确认</div>
+            <div class="mode-desc">进入列表后逐条或批量发送</div>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-row triple">
+        <div class="form-item">
+          <label class="form-label">最小间隔（秒）</label>
+          <input type="number" id="intervalMin" placeholder="1" min="1" max="60" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">最大间隔（秒）</label>
+          <input type="number" id="intervalMax" placeholder="5" min="1" max="60" />
+        </div>
+        <div class="form-item">
+          <label class="form-label">每分钟上限</label>
+          <input type="number" id="maxPerMin" placeholder="5" min="1" max="20" />
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 配置 -->
+    <div class="card">
+      <div class="card-title">AI 配置</div>
+      <div class="form-row">
+        <div class="form-item">
+          <label class="form-label">AI 提供商</label>
+          <select id="aiProvider">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="openai_compatible">OpenAI 兼容</option>
+          </select>
+        </div>
+        <div class="form-item">
+          <label class="form-label">API Key</label>
+          <input type="password" id="apiKey" placeholder="输入所选提供商的 API Key" />
+        </div>
+      </div>
+      <div class="form-row single" id="apiBaseUrlRow" style="display:none;">
+        <div class="form-item">
+          <label class="form-label">Base URL</label>
+          <input type="text" id="apiBaseUrl" placeholder="如：https://api.example.com" />
+        </div>
+      </div>
+      <div id="apiKeyHint" style="font-size:11px;color:#999;margin-top:4px;">
+        仅存储在本地，不上传服务器。不填则使用默认消息模板。
+      </div>
+
+      <div style="margin-top:12px;">
+        <label class="form-label">默认打招呼语模板（可编辑）</label>
+        <textarea id="defaultGreetingTemplate" class="template-editor" placeholder="请输入默认打招呼语模板"></textarea>
+        <div style="font-size:11px;color:#999;margin-top:4px;">
+          支持变量：{姓名} {公司} {岗位} {技能} {经验} {学历} {薪资}。当 AI 未启用或调用失败时使用。
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <!-- 底部保存栏 -->
+  <div class="save-bar">
+    <button class="btn btn-secondary" id="btnReset">重置</button>
+    <button class="btn btn-primary"   id="btnSave">保存设置</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- 依赖库（本地，避免 MV3 CSP 限制） -->
+  <script src="../lib/vendor/pdf.min.js"></script>
+  <script src="../lib/vendor/mammoth.browser.min.js"></script>
+  <!-- settings.js 使用 ES Module import，必须加 type="module" -->
+  <script type="module" src="settings.js"></script>
+</body>
+</html>

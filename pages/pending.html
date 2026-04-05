@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>待发队列 — Auto Job Greeting</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      color: #333;
+      background: #f7f8fa;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .topbar-title { font-size: 16px; font-weight: 600; }
+    .topbar-count { font-size: 13px; opacity: .85; }
+
+    /* ── 模式切换标签 ─────────────────────────── */
+    .mode-tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 11px 0;
+      text-align: center;
+      font-size: 13px;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .mode-tab.active { color: #667eea; border-bottom-color: #667eea; font-weight: 600; }
+
+    /* ── 内容区 ───────────────────────────────── */
+    .content { padding: 16px; padding-bottom: 90px; }
+
+    /* ── 空状态 ───────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: #999;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── 逐条模式 ─────────────────────────────── */
+    #viewOne { display: none; }
+    .job-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e8e8e8;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+    .job-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .job-title { font-size: 15px; font-weight: 600; color: #222; }
+    .job-salary { font-size: 13px; color: #e65100; font-weight: 500; }
+    .job-meta { font-size: 12px; color: #888; margin-bottom: 12px; }
+    .job-meta span { margin-right: 12px; }
+
+    .message-label { font-size: 12px; color: #666; margin-bottom: 6px; font-weight: 500; }
+    .message-editor {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #333;
+      resize: vertical;
+      min-height: 80px;
+      max-height: 200px;
+      outline: none;
+      font-family: inherit;
+    }
+    .message-editor:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,.15); }
+
+    .progress-info {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+
+    /* ── 批量模式 ─────────────────────────────── */
+    #viewBatch { display: none; }
+    .batch-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #eee;
+    }
+    .batch-toolbar label { font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .batch-toolbar .selected-count { font-size: 12px; color: #888; margin-left: auto; }
+
+    .job-list-item {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e8e8e8;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .job-list-item:hover { border-color: #c5cae9; }
+    .job-list-item.checked { border-color: #667eea; background: #f5f6ff; }
+    .job-list-item input[type="checkbox"] { margin-top: 2px; accent-color: #667eea; width: 15px; height: 15px; flex-shrink: 0; }
+    .job-list-info { flex: 1; }
+    .job-list-title { font-size: 13px; font-weight: 600; color: #222; margin-bottom: 3px; }
+    .job-list-meta { font-size: 12px; color: #888; }
+
+    /* ── 底部操作栏 ───────────────────────────── */
+    .action-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 12px 16px;
+      background: #fff;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: #667eea; color: #fff; }
+    .btn-danger  { background: #f44336; color: #fff; }
+    .btn-secondary { background: #f5f5f5; color: #555; border: 1px solid #e0e0e0; }
+
+    /* ── Toast ────────────────────────────────── */
+    .toast {
+      position: fixed;
+      top: 20px; left: 50%; transform: translateX(-50%) translateY(-8px);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      opacity: 0;
+      transition: opacity .3s, transform .3s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: #4caf50; }
+    .toast.error   { background: #f44336; }
+
+    /* ── 加载中 ───────────────────────────────── */
+    .loading {
+      text-align: center;
+      padding: 60px 24px;
+      color: #999;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部栏 -->
+  <div class="topbar">
+    <span class="topbar-title">📋 待发队列</span>
+    <span class="topbar-count" id="topbarCount">加载中…</span>
+  </div>
+
+  <!-- 模式切换 -->
+  <div class="mode-tabs" id="modeTabs">
+    <div class="mode-tab active" data-mode="one" id="tabOne">逐条确认</div>
+    <div class="mode-tab" data-mode="batch" id="tabBatch">批量确认</div>
+  </div>
+
+  <!-- 内容区 -->
+  <div class="content">
+    <div class="loading" id="loadingState">正在加载待发岗位…</div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="icon">🎉</div>
+      <p>暂无待发岗位</p>
+    </div>
+
+    <!-- 逐条模式 -->
+    <div id="viewOne">
+      <div class="progress-info" id="oneProgress"></div>
+      <div class="job-card" id="oneJobCard">
+        <div class="job-card-header">
+          <div>
+            <div class="job-title" id="oneJobTitle">—</div>
+            <div class="job-meta">
+              <span id="oneCompany">—</span>
+              <span id="oneCity">—</span>
+            </div>
+          </div>
+          <div class="job-salary" id="oneSalary">—</div>
+        </div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px;">
+          招聘者：<span id="oneRecruiter">—</span>
+        </div>
+        <div class="message-label">打招呼消息（可编辑）</div>
+        <textarea class="message-editor" id="oneMessage" placeholder="AI 生成中…"></textarea>
+      </div>
+    </div>
+
+    <!-- 批量模式 -->
+    <div id="viewBatch">
+      <div class="batch-toolbar">
+        <label>
+          <input type="checkbox" id="checkAll" />
+          全选
+        </label>
+        <span class="selected-count" id="selectedCount">已选 0 条</span>
+      </div>
+      <div id="batchList"></div>
+    </div>
+
+  </div>
+
+  <!-- 底部操作栏（逐条） -->
+  <div class="action-bar" id="actionBarOne" style="display:none;">
+    <button class="btn btn-secondary" id="btnSkip">跳过</button>
+    <button class="btn btn-primary"   id="btnSendOne">发送此条</button>
+  </div>
+
+  <!-- 底部操作栏（批量） -->
+  <div class="action-bar" id="actionBarBatch" style="display:none;">
+    <button class="btn btn-danger"  id="btnClearBatch">清空队列</button>
+    <button class="btn btn-primary" id="btnSendBatch">批量发送选中</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="pending.js"></script>
+</body>
+</html>

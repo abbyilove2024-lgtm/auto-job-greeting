@@ -1,0 +1,13 @@
+{
+  "name": "auto-job-greeting-tests",
+  "version": "1.0.0",
+  "description": "E2E 自动化测试 — Auto Job Greeting 插件",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node e2e.test.js",
+    "test:verbose": "node e2e.test.js --verbose"
+  },
+  "dependencies": {
+    "puppeteer": "^22.0.0"
+  }
+}
